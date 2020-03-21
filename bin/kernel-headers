@@ -1,0 +1,24 @@
+#!/bin/bash
+
+WD=$(pwd)/$(dirname $0)
+
+
+e() {
+    echo -e $1
+    exit 1
+}
+
+
+test -z "$1" && e "Usage: `basename $0` digits.some.kernel.release"
+echo $1 | grep -qP '^\d+\..+$' || e "Error: wrong release '$1'"
+
+SB="$WD/source_k_SlackBuild"
+if [ ! -d "$SB" ]; then
+    #mkdir -p "$SB/slack-desc"
+    url="https://mirrors.slackware.com/slackware/slackware64-current/source/k"
+    wget --quiet --show-progress -P "$SB"            "$url/kernel-headers.SlackBuild" || e "Error: can't download 'kernel-headers.SlackBuild'!"
+    wget --quiet --show-progress -P "$SB/slack-desc" "$url/slack-desc/slack-desc.kernel-headers" || e "Error: can't download 'slack-desc/slack-desc.kernel-headers'!"
+    chmod +x $SB/kernel-headers.SlackBuild
+fi
+
+KERNEL_SOURCE="/usr/src/linux-$1" $SB/kernel-headers.SlackBuild

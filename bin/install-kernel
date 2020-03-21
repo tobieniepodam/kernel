@@ -1,0 +1,91 @@
+#!/bin/bash
+
+WD=$(pwd)/$(dirname $0)
+R="$1"
+
+
+e() {
+  echo -e "$1"
+  exit 1
+}
+
+
+test -z "$R" && e "Usage: `basename $0` digits.some.kernel.release"
+echo $R | grep -qP '^\d+\..+$' || e "Error: wrong release '$R'"
+
+
+F="linux-$R.tar.xz"
+DS="/usr/src/linux-$R"
+
+if [ -n "$(ls -A "$DS" 2>/dev/nul)"  ]; then
+    echo "Warning, directory '$DS' is not empty! Kernel download & extract skipped."
+else
+    if [ ! -f "$WD/src/$F"  ]; then
+        url="https://cdn.kernel.org/pub/linux/kernel/v${R%%.*}.x/$F"
+        wget --quiet --show-progress -P "$WD/src" "$url" || e "Error: can't download '$F'!"
+    fi
+    echo 'Analyzing archive..'
+    total=$(tar --list -f "$WD/src/$F" | wc -l)
+    tar -xvJf "$WD/src/$F" -C /usr/src | {
+        n=1;
+        while read; do
+           echo -en "\rExtracted $n/$total"
+           n=$((n+1))
+        done
+    }
+fi
+
+
+DK="$WD/../kernel/$R"
+mkdir -p  "$DK"
+ln -fs "$DS" "$DK"
+
+read -n1 -p 'Install initrd [y/*]? ' yn; echo
+if [ "$yn" = 'y' ]; then
+    DI="$DK/initrd"
+    mkdir -p "$DI/initrd-tree"
+
+    F="/usr/share/mkinitrd/initrd-tree.tar.gz"
+    tar -xzf "$F" -C "$DI/initrd-tree"
+    ln -fs "$F" "$DI/$(basename "$F")"
+
+    cat<<'EOL'>>"$DI/mkinitrd"
+#!/bin/sh
+
+WD=$(dirname $0)
+TREE=$WD/initrd-tree
+KERNEL=$(realpath "`pwd`/$WD" | xargs basename)
+
+ROOTDEV=''
+ROOTFS=''
+LUKSDEV=''
+LVMSUPPORT=''
+
+
+test -z "$ROOTDEV" || ROOTDEV="-r $ROOTDEV"
+test -z "$ROOTFS"  || ROOTFS="-f $ROOTFS"
+test -z "$LUKSDEV" || LUKSDEV="-C $LUKSDEV"
+test "$LVMSUPPORT" = 'y' && LVMSUPPORT='-L' || LVMSUPPORT=''
+mkinitrd -s $TREE -k $KERNEL $ROOTFS $ROOTDEV $LUKSDEV $LVMSUPPORT -o $WD/initrd-$kernel
+EOL
+    chmod +x "$DI/mkinitrd"
+fi
+
+
+if [ -f "$DK/kernelpack" ]; then
+    echo "Warning, script kernelpack already exist!"
+else
+    cat<<'EOF'>>$DK/kernelpack
+#!/bin/bash
+
+WD=$(dirname "$0")
+
+
+export VERSION=$(realpath "`pwd`/$WD" | xargs basename)
+test -f "$WD/build" && export BUILD=$(cat $WD/build) || export BUILD=1
+export INITRD=yes
+
+$WD/../../bin/kernelpack && echo $(( BUILD+1 )) > $WD/build
+EOF
+    chmod +x "$DK/kernelpack"
+fi
