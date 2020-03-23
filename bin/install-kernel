@@ -20,18 +20,20 @@ DS="/usr/src/linux-$R"
 if [ -n "$(ls -A "$DS" 2>/dev/nul)"  ]; then
     echo "Warning, directory '$DS' is not empty! Kernel download & extract skipped."
 else
-    if [ ! -f "$WD/src/$F"  ]; then
+    if [ ! -f "$WD/../src/$F"  ]; then
         url="https://cdn.kernel.org/pub/linux/kernel/v${R%%.*}.x/$F"
-        wget --quiet --show-progress -P "$WD/src" "$url" || e "Error: can't download '$F'!"
+        echo $url
+        wget --quiet --show-progress -P "$WD/../src" "$url" || e "Error: can't download '$F'!"
     fi
     echo 'Analyzing archive..'
-    total=$(tar --list -f "$WD/src/$F" | wc -l)
-    tar -xvJf "$WD/src/$F" -C /usr/src | {
+    total=$(tar --list -f "$WD/../src/$F" | wc -l)
+    tar -xvJf "$WD/../src/$F" -C /usr/src | {
         n=1;
         while read; do
            echo -en "\rExtracted $n/$total"
            n=$((n+1))
         done
+        echo
     }
 fi
 
@@ -54,7 +56,7 @@ if [ "$yn" = 'y' ]; then
 
 WD=$(dirname $0)
 TREE=$WD/initrd-tree
-KERNEL=$(realpath "`pwd`/$WD" | xargs basename)
+KERNEL=$(realpath "`pwd`/$WD/../" | xargs basename)
 
 ROOTDEV=''
 ROOTFS=''
@@ -66,7 +68,7 @@ test -z "$ROOTDEV" || ROOTDEV="-r $ROOTDEV"
 test -z "$ROOTFS"  || ROOTFS="-f $ROOTFS"
 test -z "$LUKSDEV" || LUKSDEV="-C $LUKSDEV"
 test "$LVMSUPPORT" = 'y' && LVMSUPPORT='-L' || LVMSUPPORT=''
-mkinitrd -s $TREE -k $KERNEL $ROOTFS $ROOTDEV $LUKSDEV $LVMSUPPORT -o $WD/initrd-$kernel
+mkinitrd -s $TREE -k $KERNEL $ROOTFS $ROOTDEV $LUKSDEV $LVMSUPPORT -o $WD/initrd-$KERNEL
 EOL
     chmod +x "$DI/mkinitrd"
 fi

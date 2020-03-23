@@ -60,18 +60,18 @@ cat << EOF > $PKG/install/slack-desc
 # You must make exactly 11 lines for the formatting to be correct.  It's also
 # customary to leave one space after the ':' except on otherwise blank lines.
 
-                   |-----handy-ruler------------------------------------------------------|
-kernelpack-HOSTNAME: kernelpac
-kernelpack-HOSTNAME:
-kernelpack-HOSTNAME: This is completly kernel $VERSION package:
-kernelpack-HOSTNAME:  - kernel
-kernelpack-HOSTNAME:  - modules
-kernelpack-HOSTNAME:  - initrd ($INITRD)
-kernelpack-HOSTNAME:
-kernelpack-HOSTNAME:
-kernelpack-HOSTNAME:
-kernelpack-HOSTNAME:
-kernelpack-HOSTNAME:
+          |-----handy-ruler------------------------------------------------------|
+kernelpack: kernelpac
+kernelpack:
+kernelpack: This is completly kernel $VERSION package:
+kernelpack:  - kernel
+kernelpack:  - modules
+kernelpack:  - initrd ($INITRD)
+kernelpack:
+kernelpack:
+kernelpack:
+kernelpack:
+kernelpack:
 EOF
 
 # Write out the doinst.sh:
